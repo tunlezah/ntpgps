@@ -15,7 +15,7 @@ import yaml
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = {
-    "version": "1.0.0",
+    "version": "1.1.0",
     "server": {
         "host": "0.0.0.0",
         "port": 8800,

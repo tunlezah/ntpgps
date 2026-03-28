@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ntpgps"
-version = "1.0.0"
+version = "1.1.0"
 description = "Production-grade GPS-disciplined NTP server with web interface"
 readme = "readme.md"
 license = {text = "MIT"}

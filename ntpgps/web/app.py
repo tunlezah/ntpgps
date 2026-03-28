@@ -168,8 +168,8 @@ def create_app() -> Flask:
                             ws.send(json.dumps({"type": "pong"}))
                     except (json.JSONDecodeError, ValueError):
                         pass
-                except Exception:
-                    logger.debug("WebSocket receive error, closing", exc_info=True)
+                except Exception as e:
+                    logger.info("WebSocket closed: %s", e)
                     break
         finally:
             _server.unregister_ws_client(ws)

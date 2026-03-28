@@ -1,4 +1,4 @@
-# NTP GPS Server v1.0.0
+# NTP GPS Server v1.1.0
 
 Production-grade GPS-disciplined NTP server built on Chrony, with real-time web dashboard, robust source selection, and comprehensive GPS data validation.
 

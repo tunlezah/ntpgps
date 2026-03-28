@@ -20,7 +20,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-readonly SCRIPT_VERSION="1.0.0"
+readonly SCRIPT_VERSION="1.1.0"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly INSTALL_PREFIX="/opt/ntpgps"
 readonly CONF_DIR="/etc/ntpgps"
@@ -495,7 +495,7 @@ deploy_application() {
     if [[ ! -f "${CONF_DIR}/config.yaml" ]]; then
         cat > "${CONF_DIR}/config.yaml" <<'CONFIG_EOF'
 # NTP GPS Server Configuration
-version: "1.0.0"
+version: "1.1.0"
 
 server:
   host: "0.0.0.0"
@@ -691,7 +691,7 @@ install_services() {
     # Web backend service
     cat > "${SYSTEMD_DIR}/ntpgps-web.service" <<SERVICE_EOF
 [Unit]
-Description=NTP GPS Server - GPS-disciplined NTP with web interface
+Description=NTP GPS Server v${SCRIPT_VERSION} - GPS-disciplined NTP with web interface
 Documentation=https://github.com/tunlezah/ntpgps
 After=network.target gpsd.service chrony.service
 Wants=gpsd.service chrony.service
@@ -708,6 +708,9 @@ RestartSec=5
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=ntpgps-web
+
+# Restart chrony after SHM permissions are fixed by the application
+ExecStartPost=/bin/sh -c 'sleep 2 && systemctl restart chrony 2>/dev/null || true'
 
 [Install]
 WantedBy=multi-user.target

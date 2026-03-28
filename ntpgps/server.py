@@ -88,6 +88,9 @@ class NTPGPSServer:
         """Start all services."""
         logger.info("Starting NTP GPS Server v%s", self.version)
 
+        # Fix SHM permissions so chrony can read gpsd's NTP segments
+        self._fix_shm_permissions()
+
         # Start GPS collector
         self.gps.start()
         logger.info("GPS collector started (gpsd at %s:%d)",
@@ -116,6 +119,54 @@ class NTPGPSServer:
         gps_state = self.gps.get_state()
         logger.info("Initial state: gps_connected=%s, network_sources=%s",
                      gps_state["connected"], network_available)
+
+    @staticmethod
+    def _fix_shm_permissions() -> None:
+        """Fix NTP SHM segment permissions so chrony can read them.
+
+        gpsd creates SHM segments 0 and 1 with permissions 0600 (root-only).
+        Chrony drops privileges to _chrony and cannot read them. Since our
+        service runs as root, we change the permissions to 0666 using shmctl().
+        """
+        import ctypes
+        import struct
+
+        try:
+            libc = ctypes.CDLL("libc.so.6", use_errno=True)
+        except OSError:
+            logger.debug("Could not load libc for SHM permission fix")
+            return
+
+        libc.shmget.restype = ctypes.c_int
+        libc.shmctl.restype = ctypes.c_int
+
+        IPC_STAT = 2
+        IPC_SET = 1
+        # struct ipc_perm: key(4) uid(4) gid(4) cuid(4) cgid(4) mode(4) ...
+        MODE_OFFSET = 20
+
+        for unit in range(2):
+            key = 0x4E545030 + unit
+            shmid = libc.shmget(ctypes.c_int(key), ctypes.c_size_t(0), ctypes.c_int(0))
+            if shmid < 0:
+                logger.debug("NTP SHM unit %d not found (gpsd may not be running)", unit)
+                continue
+
+            buf = ctypes.create_string_buffer(256)
+            if libc.shmctl(ctypes.c_int(shmid), ctypes.c_int(IPC_STAT), buf) < 0:
+                logger.debug("shmctl IPC_STAT failed for SHM unit %d", unit)
+                continue
+
+            current_mode = struct.unpack_from("I", buf, MODE_OFFSET)[0]
+            if current_mode & 0o777 == 0o666:
+                logger.debug("NTP SHM unit %d already 0666", unit)
+                continue
+
+            struct.pack_into("I", buf, MODE_OFFSET, (current_mode & ~0o777) | 0o666)
+            if libc.shmctl(ctypes.c_int(shmid), ctypes.c_int(IPC_SET), buf) == 0:
+                logger.info("Fixed NTP SHM unit %d permissions: %o -> 0666", unit, current_mode & 0o777)
+            else:
+                logger.warning("Failed to fix NTP SHM unit %d permissions", unit)
 
     def stop(self) -> None:
         """Stop all services."""
