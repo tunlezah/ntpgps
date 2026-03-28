@@ -1,0 +1,1077 @@
+/* =============================================================================
+   GPS-Disciplined NTP Server Dashboard — Design System & Styles
+   =============================================================================
+   Color system: colorblind-friendly with pattern/icon fallbacks.
+   Theme: CSS custom properties for dark/light/system modes.
+   Layout: CSS Grid, no scrolling, viewport-locked.
+   Accessibility: WCAG 2.1 AA contrast ratios (4.5:1 text, 3:1 UI).
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1. CSS Custom Properties (Design Tokens)
+   ------------------------------------------------------------------------ */
+
+:root {
+    /* --- Shared palette (mode-independent) --- */
+
+    /* Signal strength — colorblind-safe (distinct hue + lightness steps)
+       Patterns are added via CSS pseudo-elements for additional distinction. */
+    --signal-strong:      #2e9e41;   /* green  — SNR 26+ dB                */
+    --signal-strong-bg:   #2e9e4126;
+    --signal-moderate:    #d4a017;   /* amber  — SNR 16-25 dB              */
+    --signal-moderate-bg: #d4a01726;
+    --signal-weak:        #d42a2a;   /* red    — SNR 0-15 dB               */
+    --signal-weak-bg:     #d42a2a26;
+    --signal-none:        #6b7280;
+
+    /* Status indicators (same hue family, tuned per mode below) */
+    --status-ok:       #2e9e41;
+    --status-warn:     #d4a017;
+    --status-error:    #d42a2a;
+    --status-info:     #3b82f6;
+
+    /* Typography */
+    --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas",
+                 "Liberation Mono", "SF Mono", monospace;
+    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 Roboto, Helvetica, Arial, sans-serif;
+
+    /* Font sizes — rem-based for accessibility zoom */
+    --fs-clock:    2.4rem;   /* hero time display                         */
+    --fs-local:    1.4rem;   /* local time                                */
+    --fs-panel-h:  0.68rem;  /* panel headings                            */
+    --fs-body:     0.78rem;  /* general body text                         */
+    --fs-small:    0.68rem;  /* labels, captions                          */
+    --fs-tiny:     0.6rem;   /* axis ticks, PRN labels                    */
+
+    /* Spacing */
+    --header-height: 38px;
+    --gap:         6px;
+    --pad-panel:   8px 10px;
+    --radius:      6px;
+
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-bar:  300ms cubic-bezier(.4,0,.2,1);
+
+    /* Accessible bar patterns (dashed border = unused) */
+    --bar-used-border: 2px solid transparent;
+    --bar-unused-border: 2px dashed rgba(128,128,128,0.5);
+}
+
+/* --- Dark theme (default) --- */
+[data-theme="dark"], [data-theme="system"] {
+    --bg:            #0d1117;
+    --bg-panel:      #161b22;
+    --bg-panel-alt:  #1c2230;
+    --bg-panel-hover:#1f2330;
+    --border:        #30363d;
+    --border-subtle: #21262d;
+
+    --text:          #e6edf3;
+    --text-muted:    #8b949e;
+    --text-bright:   #ffffff;
+    --text-inverse:  #0d1117;
+
+    --accent:        #6366f1;
+    --accent-dim:    rgba(99,102,241,0.15);
+
+    /* Header */
+    --header-bg:     #12141c;
+
+    /* Scrollbar */
+    --scrollbar-bg:    #161b22;
+    --scrollbar-thumb: #30363d;
+
+    /* Chart colors */
+    --chart-line:    #6366f1;
+    --chart-fill:    rgba(99,102,241,0.08);
+    --chart-grid:    rgba(255,255,255,0.05);
+    --chart-text:    #8b949e;
+    --canvas-line-gps: #6366f1;
+    --canvas-line-net: #f59e0b;
+
+    /* Alert log backgrounds */
+    --alert-info-bg:    rgba(59,130,246,0.08);
+    --alert-warn-bg:    rgba(212,160,23,0.08);
+    --alert-error-bg:   rgba(212,42,42,0.08);
+
+    /* Button */
+    --btn-bg:         #21262d;
+    --btn-bg-hover:   #30363d;
+    --btn-text:       #e6edf3;
+    --btn-danger-bg:  rgba(212,42,42,0.12);
+    --btn-danger-text: #f85149;
+}
+
+/* --- Light theme --- */
+[data-theme="light"] {
+    --bg:            #f0f2f5;
+    --bg-panel:      #ffffff;
+    --bg-panel-alt:  #f6f8fa;
+    --bg-panel-hover:#f8f9fa;
+    --border:        #d0d7de;
+    --border-subtle: #e1e4e8;
+
+    --text:          #1f2328;
+    --text-muted:    #656d76;
+    --text-bright:   #000000;
+    --text-inverse:  #ffffff;
+
+    --accent:        #4f46e5;
+    --accent-dim:    rgba(79,70,229,0.1);
+
+    --header-bg:     #ffffff;
+
+    --scrollbar-bg:    #f0f2f5;
+    --scrollbar-thumb: #c1c5cd;
+
+    /* Adjusted signal colors for light backgrounds */
+    --signal-strong:   #1a7f37;
+    --signal-moderate: #9a6700;
+    --signal-weak:     #cf222e;
+
+    --status-ok:       #1a7f37;
+    --status-warn:     #9a6700;
+    --status-error:    #cf222e;
+
+    --chart-line:    #4f46e5;
+    --chart-fill:    rgba(79,70,229,0.06);
+    --chart-grid:    rgba(0,0,0,0.08);
+    --chart-text:    #656d76;
+    --canvas-line-gps: #4f46e5;
+    --canvas-line-net: #d97706;
+
+    --alert-info-bg:    #ddf4ff;
+    --alert-warn-bg:    #fff8c5;
+    --alert-error-bg:   #ffebe9;
+
+    --btn-bg:         #f6f8fa;
+    --btn-bg-hover:   #e1e4e8;
+    --btn-text:       #1f2328;
+    --btn-danger-bg:  #ffebe9;
+    --btn-danger-text: #cf222e;
+}
+
+/* System theme: follow OS preference for light mode */
+@media (prefers-color-scheme: light) {
+    [data-theme="system"] {
+        --bg:            #f0f2f5;
+        --bg-panel:      #ffffff;
+        --bg-panel-alt:  #f6f8fa;
+        --bg-panel-hover:#f8f9fa;
+        --border:        #d0d7de;
+        --border-subtle: #e1e4e8;
+        --text:          #1f2328;
+        --text-muted:    #656d76;
+        --text-bright:   #000000;
+        --text-inverse:  #ffffff;
+        --accent:        #4f46e5;
+        --accent-dim:    rgba(79,70,229,0.1);
+        --header-bg:     #ffffff;
+        --scrollbar-bg:  #f0f2f5;
+        --scrollbar-thumb:#c1c5cd;
+        --signal-strong:   #1a7f37;
+        --signal-moderate: #9a6700;
+        --signal-weak:     #cf222e;
+        --status-ok:       #1a7f37;
+        --status-warn:     #9a6700;
+        --status-error:    #cf222e;
+        --chart-line:    #4f46e5;
+        --chart-fill:    rgba(79,70,229,0.06);
+        --chart-grid:    rgba(0,0,0,0.08);
+        --chart-text:    #656d76;
+        --canvas-line-gps: #4f46e5;
+        --canvas-line-net: #d97706;
+        --alert-info-bg:    #ddf4ff;
+        --alert-warn-bg:    #fff8c5;
+        --alert-error-bg:   #ffebe9;
+        --btn-bg:         #f6f8fa;
+        --btn-bg-hover:   #e1e4e8;
+        --btn-text:       #1f2328;
+        --btn-danger-bg:  #ffebe9;
+        --btn-danger-text: #cf222e;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   2. Reset & Base
+   ------------------------------------------------------------------------ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-sans);
+    font-size: var(--fs-body);
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.4;
+    overflow: hidden;          /* NO SCROLLING — viewport-locked */
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+/* Screen-reader-only utility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Focus visible for keyboard users */
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   3. Header
+   ------------------------------------------------------------------------ */
+
+.header {
+    height: var(--header-height);
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+}
+
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+.app-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-bright);
+    letter-spacing: -0.02em;
+}
+
+.connection-status {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--status-warn);
+    color: #000;
+    font-weight: 600;
+}
+.connection-status.connected { background: var(--status-ok); color: #fff; }
+.connection-status.disconnected { background: var(--status-error); color: #fff; }
+
+.theme-toggle {
+    display: flex;
+    gap: 2px;
+    background: var(--bg);
+    border-radius: 4px;
+    padding: 2px;
+}
+
+.btn-theme {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all var(--transition-fast);
+}
+.btn-theme:hover { color: var(--text); }
+.btn-theme.active { background: var(--accent); color: #fff; }
+
+.version {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+/* ---------------------------------------------------------------------------
+   4. Dashboard Grid Layout
+   ---------------------------------------------------------------------------
+   Desktop (>=1280px): 4-column x 3-row, viewport-locked, no scrolling.
+
+   +-------------------+-------------------+-------------------+-------------------+
+   |      TIME         |    GPS HEALTH     |       PPS         |   NTP TRACKING    |
+   +-------------------+-------------------+-------------------+-------------------+
+   |              SATELLITES (3 cols)                           |     ALERTS        |
+   +-------------------+-------------------+-------------------+-------------------+
+   |          DRIFT GRAPH (2 cols)         |            CONTROLS (2 cols)          |
+   +-------------------+-------------------+-------------------+-------------------+
+
+   Priority: time > satellites > gps health > drift > pps > alerts > controls
+   ------------------------------------------------------------------------ */
+
+.dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-rows: auto 1fr auto;
+    gap: var(--gap);
+    padding: var(--gap);
+    padding-top: calc(var(--header-height) + var(--gap));
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    grid-template-areas:
+        "time    health   pps     tracking"
+        "sats    sats     sats    alerts"
+        "drift   drift    ctrl    ctrl";
+}
+
+/* ---------------------------------------------------------------------------
+   5. Panel Base
+   ------------------------------------------------------------------------ */
+
+.panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--pad-panel);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
+.panel-title {
+    font-size: var(--fs-panel-h);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Grid area assignments */
+.panel-time       { grid-area: time; }
+.panel-gps-health { grid-area: health; }
+.panel-pps        { grid-area: pps; }
+.panel-tracking   { grid-area: tracking; }
+.panel-satellites { grid-area: sats; min-height: 0; }
+.panel-alerts     { grid-area: alerts; }
+.panel-drift      { grid-area: drift; }
+.panel-controls   { grid-area: ctrl; }
+
+/* ---------------------------------------------------------------------------
+   6. Time Panel (Hero Clock)
+   ------------------------------------------------------------------------ */
+
+.time-display { text-align: center; margin-bottom: 4px; }
+
+.time-utc {
+    font-family: var(--font-mono);
+    font-size: var(--fs-clock);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-bright);
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+}
+
+.time-local {
+    font-family: var(--font-mono);
+    font-size: var(--fs-local);
+    font-weight: 500;
+    color: var(--accent);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+.time-label {
+    font-size: var(--fs-tiny);
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+
+.dst-badge {
+    display: inline-block;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.source-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 6px;
+    border-radius: 9999px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.source-badge--gps {
+    background: var(--signal-strong-bg);
+    color: var(--signal-strong);
+    border: 1px solid var(--signal-strong);
+}
+.source-badge--degraded {
+    background: var(--signal-moderate-bg);
+    color: var(--signal-moderate);
+    border: 1px solid var(--signal-moderate);
+}
+.source-badge--free {
+    background: var(--signal-weak-bg);
+    color: var(--signal-weak);
+    border: 1px solid var(--signal-weak);
+}
+
+.time-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.meta-item { text-align: center; }
+.meta-label { display: block; font-size: 9px; color: var(--text-muted); }
+.meta-value {
+    display: block;
+    font-size: var(--fs-body);
+    font-weight: 600;
+    color: var(--text-bright);
+    font-family: var(--font-mono);
+}
+
+/* ---------------------------------------------------------------------------
+   7. GPS Health Panel (Status Cards)
+   ------------------------------------------------------------------------ */
+
+.health-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    flex: 1;
+    align-content: start;
+}
+
+.health-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    background: var(--bg);
+    border-radius: 4px;
+}
+
+.health-label {
+    font-size: var(--fs-small);
+    color: var(--text-muted);
+}
+
+.health-value {
+    font-size: var(--fs-small);
+    font-weight: 600;
+    font-family: var(--font-mono);
+}
+
+.health-indicator {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
+/* Status indicator classes with icon-like markers for colorblind safety */
+.indicator-ok {
+    background: rgba(46,158,65,0.15);
+    color: var(--status-ok);
+}
+.indicator-ok::before {
+    content: "\2713 ";  /* checkmark */
+    font-size: 9px;
+}
+
+.indicator-warn {
+    background: rgba(212,160,23,0.15);
+    color: var(--status-warn);
+}
+.indicator-warn::before {
+    content: "\26A0 ";  /* warning triangle */
+    font-size: 9px;
+}
+
+.indicator-error {
+    background: rgba(212,42,42,0.15);
+    color: var(--status-error);
+}
+.indicator-error::before {
+    content: "\2717 ";  /* X mark */
+    font-size: 9px;
+}
+
+.indicator-unknown {
+    background: var(--bg);
+    color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   8. PPS Panel
+   ------------------------------------------------------------------------ */
+
+.pps-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    flex: 1;
+    align-content: start;
+}
+
+.pps-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 6px;
+    background: var(--bg);
+    border-radius: 4px;
+}
+
+.pps-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-bottom: 1px;
+}
+
+.pps-indicator {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
+.pps-value {
+    font-size: var(--fs-body);
+    font-weight: 600;
+    font-family: var(--font-mono);
+}
+
+/* PPS pulse animation */
+@keyframes pps-flash {
+    0%   { box-shadow: 0 0 0 0 rgba(46,158,65,0.4); }
+    70%  { box-shadow: 0 0 0 6px rgba(46,158,65,0); }
+    100% { box-shadow: 0 0 0 0 rgba(46,158,65,0); }
+}
+
+.pps-pulse {
+    animation: pps-flash 0.6s ease-out;
+}
+
+/* ---------------------------------------------------------------------------
+   9. NTP Tracking Panel
+   ------------------------------------------------------------------------ */
+
+.tracking-info {
+    font-size: var(--fs-small);
+    font-family: var(--font-mono);
+    background: var(--bg);
+    border-radius: 4px;
+    padding: 6px 8px;
+    line-height: 1.7;
+    flex: 1;
+}
+
+.ti-label {
+    color: var(--text-muted);
+    font-size: var(--fs-tiny);
+}
+
+/* ---------------------------------------------------------------------------
+   10. Satellite Panel (SNR Bar Chart)
+   ------------------------------------------------------------------------ */
+
+.sat-summary {
+    font-size: var(--fs-tiny);
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+.satellite-chart {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-height: 0;
+    padding-bottom: 2px;
+}
+
+.sat-bar-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 14px;
+    max-width: 32px;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.sat-bar {
+    width: 100%;
+    max-width: 22px;
+    border-radius: 2px 2px 0 0;
+    transition: height var(--transition-bar);
+    position: relative;
+    min-height: 2px;
+}
+
+/* Colorblind-safe patterns overlaid on signal-strength colors */
+.sat-bar.strength-strong {
+    background: var(--signal-strong);
+}
+
+.sat-bar.strength-moderate {
+    background: var(--signal-moderate);
+}
+.sat-bar.strength-moderate::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.12) 3px,
+        rgba(0,0,0,0.12) 5px
+    );
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.sat-bar.strength-weak {
+    background: var(--signal-weak);
+}
+.sat-bar.strength-weak::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.18) 3px,
+        rgba(0,0,0,0.18) 5px
+    );
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.sat-bar.strength-none {
+    background: var(--signal-none);
+    opacity: 0.3;
+}
+
+.sat-bar.unused {
+    opacity: 0.4;
+    border: var(--bar-unused-border);
+}
+
+.sat-bar-label {
+    font-size: 8px;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    text-align: center;
+}
+
+.sat-bar-ss {
+    font-size: 7px;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    margin-bottom: 1px;
+    line-height: 1;
+}
+
+.sat-legend {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.legend-item {
+    font-size: 9px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.legend-color {
+    width: 10px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.legend-strong  { background: var(--signal-strong); }
+.legend-moderate {
+    background: var(--signal-moderate);
+    /* Diagonal hatch to match bar pattern */
+    background-image: repeating-linear-gradient(
+        45deg, transparent, transparent 2px,
+        rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 3px
+    );
+}
+.legend-weak {
+    background: var(--signal-weak);
+    background-image: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.2) 2px, rgba(0,0,0,0.2) 3px
+    );
+}
+.legend-bar-unused {
+    width: 10px;
+    height: 8px;
+    border-radius: 2px;
+    background: var(--signal-none);
+    opacity: 0.4;
+    border: 1px dashed var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   11. Drift Panel (Time-Series Canvas Chart)
+   ------------------------------------------------------------------------ */
+
+.panel-drift .panel-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#driftCanvas {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    border-radius: 4px;
+    background: var(--bg);
+    display: block;
+}
+
+.drift-stats {
+    display: flex;
+    gap: 12px;
+    font-size: var(--fs-tiny);
+    color: var(--text-muted);
+    margin-top: 3px;
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+}
+
+.drift-stats span {
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+   12. Alerts Panel (Scrollable Log)
+   ------------------------------------------------------------------------ */
+
+.alert-count {
+    font-size: 9px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    padding: 0 5px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.alert-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 0;
+}
+
+.alert-empty {
+    color: var(--text-muted);
+    font-size: var(--fs-small);
+    text-align: center;
+    padding: 12px;
+}
+
+.alert-item {
+    font-size: var(--fs-small);
+    padding: 3px 8px;
+    border-radius: 3px;
+    border-left: 3px solid;
+    flex-shrink: 0;
+    line-height: 1.4;
+}
+
+.alert-item.info    { border-color: var(--status-info); background: var(--alert-info-bg); }
+.alert-item.warning { border-color: var(--status-warn); background: var(--alert-warn-bg); }
+.alert-item.critical { border-color: var(--status-error); background: var(--alert-error-bg); }
+
+.alert-time {
+    font-size: 9px;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    margin-right: 4px;
+}
+
+/* Toast notification overlay (non-intrusive, top-right) */
+.toast-container {
+    position: fixed;
+    top: calc(var(--header-height) + var(--gap));
+    right: var(--gap);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    pointer-events: none;
+}
+
+.toast {
+    pointer-events: auto;
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    font-size: var(--fs-small);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    animation: toast-in 300ms ease-out;
+    max-width: 320px;
+    color: #fff;
+}
+.toast--info  { background: var(--status-info); }
+.toast--warn  { background: var(--status-warn); color: #000; }
+.toast--error { background: var(--status-error); }
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toast-out {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(20px); }
+}
+.toast--dismiss { animation: toast-out 200ms ease-in forwards; }
+
+/* ---------------------------------------------------------------------------
+   13. Controls Panel
+   ------------------------------------------------------------------------ */
+
+.panel-controls {
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-controls .panel-body-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    flex: 1;
+    align-content: start;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.control-label {
+    display: block;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.btn-group {
+    display: flex;
+    gap: 3px;
+}
+
+.btn {
+    font-size: var(--fs-small);
+    font-weight: 500;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: inherit;
+    white-space: nowrap;
+}
+.btn:hover { background: var(--btn-bg-hover); border-color: var(--accent); }
+.btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.btn-action {
+    width: 100%;
+    font-size: var(--fs-small);
+    font-weight: 500;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all var(--transition-fast);
+}
+.btn-action:hover { background: var(--accent-dim); border-color: var(--accent); }
+
+.btn-danger {
+    background: var(--btn-danger-bg);
+    color: var(--btn-danger-text);
+    border-color: var(--btn-danger-text);
+}
+.btn-danger:hover { background: var(--status-error); color: #fff; }
+
+.btn-source {
+    flex: 1;
+}
+
+/* Confirmation dialog */
+.dialog-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease;
+}
+.dialog-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.dialog-box {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    max-width: 360px;
+    width: 90%;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+
+.dialog-title {
+    font-size: var(--fs-body);
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-bright);
+}
+
+.dialog-message {
+    font-size: var(--fs-small);
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.dialog-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* ---------------------------------------------------------------------------
+   14. Responsive Breakpoints
+   ------------------------------------------------------------------------ */
+
+/* Medium desktops */
+@media (max-width: 1400px) {
+    :root {
+        --fs-clock: 2rem;
+        --fs-local: 1.2rem;
+    }
+}
+
+/* Tablet / small screens (<=1024px) — 2-column, allow scroll */
+@media (max-width: 1024px) {
+    body { overflow-y: auto; }
+
+    :root {
+        --fs-clock: 1.8rem;
+        --fs-local: 1rem;
+    }
+
+    .dashboard {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto;
+        grid-template-areas:
+            "time     time"
+            "health   pps"
+            "sats     sats"
+            "tracking alerts"
+            "drift    drift"
+            "ctrl     ctrl";
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   15. Reduced Motion
+   ------------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   16. Print
+   ------------------------------------------------------------------------ */
+
+@media print {
+    body { overflow: visible; }
+    .header, .toast-container, .panel-controls { display: none; }
+    .panel { break-inside: avoid; border: 1px solid #ccc; }
+    .dashboard { height: auto; }
+}
