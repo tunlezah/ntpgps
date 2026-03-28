@@ -157,6 +157,7 @@
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'status') {
+                    _lastDataTime = Date.now();
                     lastStatus = data;
                     updateDashboard(data);
                 }
@@ -797,12 +798,51 @@
     // 17. Initialization
     // =========================================================================
 
+    // =========================================================================
+    // HTTP Polling Fallback
+    // =========================================================================
+
+    let _lastDataTime = 0;
+    let _pollTimer = null;
+    let _pollInterval = 5000; // 5 seconds
+
+    function fetchStatusHTTP() {
+        fetch('/api/status')
+            .then(function (resp) { return resp.json(); })
+            .then(function (data) {
+                if (data && data.type === 'status') {
+                    _lastDataTime = Date.now();
+                    lastStatus = data;
+                    updateDashboard(data);
+                }
+            })
+            .catch(function () { /* silently retry on next interval */ });
+    }
+
+    function startPollingFallback() {
+        if (_pollTimer) return;
+        _pollTimer = setInterval(function () {
+            // Only poll if WS hasn't delivered data recently
+            if (Date.now() - _lastDataTime > _pollInterval) {
+                fetchStatusHTTP();
+            }
+        }, _pollInterval);
+    }
+
     function init() {
         initTheme();
         Toasts.init();
         ConfirmDialog.init();
         initControls();
+
+        // Immediately fetch status via HTTP so dashboard has data before WS connects
+        fetchStatusHTTP();
+
+        // Connect WebSocket for real-time updates
         connectWebSocket();
+
+        // Start HTTP polling fallback (fires only when WS isn't delivering data)
+        startPollingFallback();
 
         // Clock ticks independently at 1 Hz
         setInterval(updateLocalClock, 1000);

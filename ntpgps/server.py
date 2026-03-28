@@ -67,18 +67,55 @@ class NTPGPSServer:
         # Monitoring thread
         self._running = False
         self._monitor_thread: threading.Thread | None = None
-        self._last_validation: dict = {}
+        self._last_validation: dict = {
+            "valid": False,
+            "trusted": False,
+            "usable": False,
+            "checks": {
+                "time_present": False,
+                "fix_valid": False,
+                "sufficient_satellites": False,
+                "geometry_acceptable": False,
+                "signal_quality_ok": False,
+                "time_consistent": True,
+                "pps_stable": True,
+            },
+            "consecutive_valid": 0,
+            "consecutive_invalid": 0,
+        }
 
     def start(self) -> None:
         """Start all services."""
         logger.info("Starting NTP GPS Server v%s", self.version)
+
+        # Start GPS collector
         self.gps.start()
+        logger.info("GPS collector started (gpsd at %s:%d)",
+                     self.gps.host, self.gps.port)
+
+        # Run first monitor tick synchronously so initial WS connections
+        # get populated data immediately
+        try:
+            self._run_initial_tick()
+        except Exception:
+            logger.warning("Initial monitor tick failed (non-fatal)", exc_info=True)
+
+        # Start background monitor thread
         self._running = True
         self._monitor_thread = threading.Thread(
             target=self._monitor_loop, daemon=True, name="monitor"
         )
         self._monitor_thread.start()
+        logger.info("Monitor thread started (1s interval)")
         logger.info("All services started")
+
+    def _run_initial_tick(self) -> None:
+        """Run one monitor tick synchronously at startup to populate initial state."""
+        self.chrony.poll()
+        network_available = self.chrony.has_network_sources()
+        gps_state = self.gps.get_state()
+        logger.info("Initial state: gps_connected=%s, network_sources=%s",
+                     gps_state["connected"], network_available)
 
     def stop(self) -> None:
         """Stop all services."""
@@ -98,14 +135,18 @@ class NTPGPSServer:
 
     def _broadcast_ws(self, data: dict) -> None:
         """Broadcast data to all WebSocket clients."""
+        with self._ws_lock:
+            if not self._ws_clients:
+                return
+            clients = set(self._ws_clients)
+
         msg = json.dumps(data)
         dead = set()
-        with self._ws_lock:
-            clients = set(self._ws_clients)
         for ws in clients:
             try:
                 ws.send(msg)
             except Exception:
+                logger.debug("WebSocket send failed, removing client")
                 dead.add(ws)
         if dead:
             with self._ws_lock:
