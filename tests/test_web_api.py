@@ -22,7 +22,7 @@ def mock_server(tmp_path):
 
     server = MagicMock(spec=NTPGPSServer)
     server.config = config
-    server.version = "1.0.0"
+    server.version = "1.1.0"
     server.source_engine = SourceSelectionEngine()
 
     # Mock chrony manager
@@ -58,7 +58,7 @@ def mock_server(tmp_path):
     server.get_full_status.return_value = {
         "type": "status",
         "timestamp": time.time(),
-        "version": "1.0.0",
+        "version": "1.1.0",
         "gps": server.gps.get_state.return_value,
         "validation": {"valid": True, "trusted": True, "usable": True},
         "source": server.source_engine.get_status(),
@@ -181,7 +181,7 @@ class TestDashboardPage:
         resp = client.get("/")
         assert resp.status_code == 200
         assert b"NTP GPS Server" in resp.data
-        assert b"v1.0.0" in resp.data
+        assert b"v1.1.0" in resp.data
 
 
 class TestNoServer:

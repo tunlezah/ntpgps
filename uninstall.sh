@@ -18,7 +18,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Constants (must match install.sh)
 # ---------------------------------------------------------------------------
-readonly SCRIPT_VERSION="1.0.0"
+readonly SCRIPT_VERSION="1.1.0"
 readonly INSTALL_PREFIX="/opt/ntpgps"
 readonly CONF_DIR="/etc/ntpgps"
 readonly BACKUP_DIR="/etc/ntpgps/backup"
