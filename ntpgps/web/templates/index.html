@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NTP GPS Server</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F6F0;</text></svg>">
+</head>
+<body>
+
+<!-- ===== Header ===== -->
+<header class="header" role="banner">
+    <div class="header-left">
+        <h1 class="app-title">NTP GPS Server</h1>
+        <span class="connection-status" id="connStatus"
+              role="status" aria-label="Connection status">Connecting...</span>
+    </div>
+    <div class="header-right">
+        <div class="theme-toggle" role="radiogroup" aria-label="Color theme">
+            <button id="btnThemeDark" class="btn-theme" title="Dark mode"
+                    role="radio" aria-checked="false">Dark</button>
+            <button id="btnThemeLight" class="btn-theme" title="Light mode"
+                    role="radio" aria-checked="false">Light</button>
+            <button id="btnThemeSystem" class="btn-theme active" title="System mode"
+                    role="radio" aria-checked="true">Auto</button>
+        </div>
+        <span class="version">v{{ version }}</span>
+    </div>
+</header>
+
+<!-- ===== Toast Notification Container ===== -->
+<div class="toast-container" aria-live="polite" aria-atomic="false" id="toasts"></div>
+
+<!-- ===== Dashboard Grid ===== -->
+<main class="dashboard" role="main">
+
+    <!-- 1. TIME PANEL -->
+    <section class="panel panel-time" id="panelTime" aria-label="Current time">
+        <h2 class="panel-title">
+            System Time
+            <span class="source-badge source-badge--gps" id="sourceBadge"
+                  role="status" aria-label="Time source: starting">--</span>
+        </h2>
+        <div class="time-display">
+            <div class="time-utc" id="timeUTC" aria-live="off">--:--:--</div>
+            <div class="time-label">UTC</div>
+            <div class="time-local" id="timeLocal">--:--:--</div>
+            <div class="time-label">
+                Local
+                <span id="dstIndicator" class="dst-badge">DST: --</span>
+            </div>
+        </div>
+        <div class="time-meta">
+            <div class="meta-item">
+                <span class="meta-label">Source</span>
+                <span class="meta-value" id="activeSource">--</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Stratum</span>
+                <span class="meta-value" id="stratum">--</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">State</span>
+                <span class="meta-value" id="sourceState">--</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. GPS HEALTH PANEL -->
+    <section class="panel panel-gps-health" id="panelGPSHealth" aria-label="GPS health status">
+        <h2 class="panel-title">GPS Health</h2>
+        <div class="health-grid">
+            <div class="health-item">
+                <span class="health-label">Fix Type</span>
+                <span class="health-value" id="fixType">--</span>
+            </div>
+            <div class="health-item">
+                <span class="health-label">Satellites</span>
+                <span class="health-value">
+                    <span id="satsUsed">0</span> / <span id="satsVisible">0</span>
+                </span>
+            </div>
+            <div class="health-item">
+                <span class="health-label">PDOP</span>
+                <span class="health-value" id="pdop">--</span>
+            </div>
+            <div class="health-item">
+                <span class="health-label">GPS Sanity</span>
+                <span class="health-indicator" id="gpsSanity"
+                      role="status">--</span>
+                <span class="sr-only" id="gpsSanitySR"></span>
+            </div>
+            <div class="health-item">
+                <span class="health-label">Time Valid</span>
+                <span class="health-indicator" id="timeValid"
+                      role="status">--</span>
+                <span class="sr-only" id="timeValidSR"></span>
+            </div>
+            <div class="health-item">
+                <span class="health-label">Geometry</span>
+                <span class="health-value" id="geometryQuality">--</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. PPS PANEL -->
+    <section class="panel panel-pps" id="panelPPS" aria-label="PPS signal status">
+        <h2 class="panel-title">PPS Status</h2>
+        <div class="pps-grid">
+            <div class="pps-item">
+                <span class="pps-label">PPS Present</span>
+                <span class="pps-indicator" id="ppsPresent"
+                      role="status">--</span>
+            </div>
+            <div class="pps-item">
+                <span class="pps-label">Stability</span>
+                <span class="pps-indicator" id="ppsStable"
+                      role="status">--</span>
+            </div>
+            <div class="pps-item">
+                <span class="pps-label">Offset</span>
+                <span class="pps-value" id="ppsOffset">-- &micro;s</span>
+            </div>
+            <div class="pps-item">
+                <span class="pps-label">Jitter</span>
+                <span class="pps-value" id="ppsJitter">-- &micro;s</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. NTP TRACKING PANEL -->
+    <section class="panel panel-tracking" id="panelTracking" aria-label="NTP tracking information">
+        <h2 class="panel-title">NTP Tracking</h2>
+        <div class="tracking-info" id="trackingInfo">
+            <div><span class="ti-label">Ref:</span> <span id="tiRef">--</span></div>
+            <div><span class="ti-label">Offset:</span> <span id="tiOffset">--</span></div>
+            <div><span class="ti-label">Freq:</span> <span id="tiFreq">--</span></div>
+            <div><span class="ti-label">Skew:</span> <span id="tiSkew">--</span></div>
+        </div>
+    </section>
+
+    <!-- 5. SATELLITES PANEL (spans 3 columns) -->
+    <section class="panel panel-satellites" id="panelSatellites"
+             aria-label="Satellite signal strength">
+        <h2 class="panel-title">
+            Satellites
+            <span class="sat-summary" id="satSummary"></span>
+        </h2>
+        <div class="satellite-chart" id="satelliteChart"
+             role="img" aria-label="Satellite signal strength bar chart">
+            <!-- Satellite bars injected by JS -->
+        </div>
+        <div class="sat-legend" aria-hidden="true">
+            <span class="legend-item"><span class="legend-color legend-strong"></span> &gt;25 dB (strong)</span>
+            <span class="legend-item"><span class="legend-color legend-moderate"></span> 16-25 dB (moderate)</span>
+            <span class="legend-item"><span class="legend-color legend-weak"></span> &lt;16 dB (weak)</span>
+            <span class="legend-item"><span class="legend-bar-unused"></span> Not used</span>
+        </div>
+    </section>
+
+    <!-- 6. ALERTS PANEL -->
+    <section class="panel panel-alerts" id="panelAlerts" aria-label="System alerts">
+        <h2 class="panel-title">
+            Alerts
+            <span class="alert-count" id="alertCount">0</span>
+        </h2>
+        <div class="alert-list" id="alertList" role="log"
+             aria-label="Alert messages" aria-relevant="additions">
+            <div class="alert-empty">No alerts</div>
+        </div>
+    </section>
+
+    <!-- 7. DRIFT GRAPH PANEL (spans 2 columns) -->
+    <section class="panel panel-drift" id="panelDrift" aria-label="Clock drift graph">
+        <h2 class="panel-title">Drift (GPS vs Network)</h2>
+        <div class="panel-body" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+            <canvas id="driftCanvas"
+                    aria-label="Clock drift over time line chart"
+                    role="img"></canvas>
+            <div class="drift-stats">
+                <span>Rate: <span id="driftRate">--</span> ppm</span>
+                <span>Samples: <span id="driftSamples">0</span></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. CONTROLS PANEL (spans 2 columns) -->
+    <section class="panel panel-controls" id="panelControls" aria-label="Server controls">
+        <h2 class="panel-title">Controls</h2>
+        <div class="panel-body-inner">
+            <div class="control-group">
+                <label class="control-label">Time Source</label>
+                <div class="btn-group">
+                    <button class="btn btn-source" data-mode="auto" id="btnAuto">Auto</button>
+                    <button class="btn btn-source" data-mode="gps" id="btnGPS">GPS</button>
+                    <button class="btn btn-source" data-mode="network" id="btnNetwork">Network</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Services</label>
+                <button class="btn btn-action" id="btnRestartNTP">Restart NTP</button>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- ===== Confirmation Dialog ===== -->
+<div class="dialog-overlay" id="dialogOverlay"
+     role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="dialog-box">
+        <div class="dialog-title" id="dialogTitle">Confirm Action</div>
+        <div class="dialog-message" id="dialogMessage">Are you sure?</div>
+        <div class="dialog-actions">
+            <button class="btn" id="dialogCancel">Cancel</button>
+            <button class="btn btn-danger" id="dialogConfirm">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

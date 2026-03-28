@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ntpgps"
+version = "1.0.0"
+description = "Production-grade GPS-disciplined NTP server with web interface"
+readme = "readme.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.0.0",
+    "flask-sock>=0.7.0",
+    "pyyaml>=6.0",
+    "simple-websocket>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+[project.scripts]
+ntpgps = "ntpgps.main:main"
+
+[tool.setuptools.packages.find]
+include = ["ntpgps*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
