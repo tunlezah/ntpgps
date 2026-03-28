@@ -137,26 +137,42 @@ def create_app() -> Flask:
         if not _server:
             ws.close()
             return
+
+        logger.info("WebSocket client connected")
         _server.register_ws_client(ws)
         try:
-            # Send initial state
+            # Send initial state immediately so client has data before first broadcast
             ws.send(json.dumps(_server.get_full_status()))
-            # Keep connection alive
+
+            # Keep connection alive - receive loop handles client pings
+            consecutive_timeouts = 0
             while True:
                 try:
                     msg = ws.receive(timeout=30)
                     if msg is None:
-                        break
-                    # Handle client messages (ping/pong, config updates)
+                        # Timeout - no data from client in 30s
+                        consecutive_timeouts += 1
+                        if consecutive_timeouts >= 3:
+                            logger.info("WebSocket client silent for 90s, closing")
+                            break
+                        # Send a keep-alive to check connection is still valid
+                        try:
+                            ws.send(json.dumps({"type": "pong"}))
+                        except Exception:
+                            break
+                        continue
+                    consecutive_timeouts = 0
                     try:
                         data = json.loads(msg)
                         if data.get("type") == "ping":
                             ws.send(json.dumps({"type": "pong"}))
-                    except json.JSONDecodeError:
+                    except (json.JSONDecodeError, ValueError):
                         pass
                 except Exception:
+                    logger.debug("WebSocket receive error, closing", exc_info=True)
                     break
         finally:
             _server.unregister_ws_client(ws)
+            logger.info("WebSocket client disconnected")
 
     return app

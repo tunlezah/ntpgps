@@ -95,7 +95,7 @@ def main() -> None:
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
 
-    # Start services
+    # Start services (includes initial data population)
     server.start()
 
     # Start web server
@@ -104,7 +104,10 @@ def main() -> None:
     port = args.port or config.get("server.port", 8800)
     debug = args.debug or config.get("server.debug", False)
 
-    logger.info("Web interface: http://%s:%d", host, port)
+    logger.info("Startup complete. Web interface: http://%s:%d", host, port)
+    logger.info("GPS: gpsd at %s:%d | Chrony: %s",
+                config.get("gps.gpsd_host"), config.get("gps.gpsd_port"),
+                config.get("ntp.chrony_config_path"))
 
     try:
         app.run(host=host, port=port, debug=debug, use_reloader=False)
