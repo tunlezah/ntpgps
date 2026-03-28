@@ -755,8 +755,13 @@ enable_and_verify() {
         all_ok=0
     fi
 
+    # Read configured port from config file (default 8800)
+    local web_port
+    web_port=$(grep -A2 '^server:' "${CONF_DIR}/config.yaml" 2>/dev/null | grep 'port:' | awk '{print $2}' || echo "8800")
+    web_port="${web_port:-8800}"
+
     if systemctl is-active --quiet ntpgps-web.service 2>/dev/null; then
-        log_info "  web UI:  running on port 8080"
+        log_info "  web UI:  running on port ${web_port}"
     else
         log_warn "  web UI:  NOT running (see note above)"
     fi
