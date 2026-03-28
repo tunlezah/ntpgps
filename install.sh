@@ -557,14 +557,23 @@ configure_gpsd() {
         fi
     fi
 
+    # Only include PPS device if it actually exists
+    local devices="${gpsd_device}"
+    if [[ -e "${gpsd_pps}" ]]; then
+        devices="${gpsd_device} ${gpsd_pps}"
+        log_info "PPS device found at ${gpsd_pps}"
+    else
+        log_info "No PPS device at ${gpsd_pps} (normal for USB GPS)"
+    fi
+
     local gpsd_conf="/etc/default/gpsd"
     cat > "${CONF_DIR}/gpsd.conf" <<GPSD_EOF
 # gpsd configuration -- managed by ntpgps installer
 # Original backed up in ${BACKUP_DIR}/
 START_DAEMON="true"
-USBAUTO="false"
-DEVICES="${gpsd_device} ${gpsd_pps}"
-GPSD_OPTIONS="-n -b"
+USBAUTO="true"
+DEVICES="${devices}"
+GPSD_OPTIONS="-n"
 GPSD_SOCKET="/var/run/gpsd.sock"
 GPSD_EOF
 
@@ -628,14 +637,17 @@ configure_chrony() {
 # chrony.conf -- GPS-disciplined NTP server
 # Managed by ntpgps installer. Original backed up.
 
-# GPS NMEA via shared-memory from gpsd (refclock SHM 0)
-# offset: typical NMEA sentence delay (~0.2s, tune for your receiver)
-# refid NMEA, stratum 1 when combined with PPS, noselect alone
-refclock SHM 0  refid NMEA  offset 0.200  delay 0.2  noselect
+# GPS NMEA time via shared-memory from gpsd (refclock SHM 0)
+# This is the PRIMARY GPS source for USB receivers.
+# offset 0.2: compensates for typical USB/NMEA processing delay
+# prefer: GPS is always the preferred time source
+refclock SHM 0  refid GPS  offset 0.200  delay 0.2  precision 1e-1  poll 4  filter 64  prefer
 
 # PPS via shared-memory from gpsd (refclock SHM 1)
-# PPS is precise to microseconds; prefer it, lock to NMEA for time-of-day
-refclock SHM 1  refid PPS  precision 1e-7  lock NMEA  poll 3  trust  prefer
+# Only populated if gpsd receives a valid PPS signal.
+# On USB GPS, PPS may not be available via SHM — this is harmless.
+# noselect: tracked for monitoring but not used alone (needs GPS for second ID)
+refclock SHM 1  refid PPS  precision 1e-7  poll 4  filter 64  trust  noselect
 
 # Fallback NTP pools (used when GPS is unavailable)
 pool 0.pool.ntp.org iburst maxsources 2
@@ -656,7 +668,10 @@ log tracking measurements statistics refclocks
 # Step the clock on startup if off by more than 1 second
 makestep 1.0 3
 
-# Enable kernel PPS discipline if available
+# Larger distance tolerance for GPS over USB (USB jitter is ~1-10ms)
+maxdistance 16.0
+
+# Lock all memory pages (prevents swapping for timing-sensitive process)
 lock_all
 
 # Rate limiting for external clients
